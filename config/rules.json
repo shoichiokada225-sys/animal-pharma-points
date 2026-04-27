@@ -1,0 +1,13 @@
+{
+  "default_rate": 0.001,
+  "customer_rates": {},
+  "category_rates": {},
+  "tiers": {
+    "general": { "min_amount": 0, "rate": 0.001 },
+    "silver":  { "min_amount": 5000000, "rate": 0.0015 },
+    "gold":    { "min_amount": 10000000, "rate": 0.002 }
+  },
+  "expiry_months": 24,
+  "rounding": "floor",
+  "_comment": "default_rate: デフォルト還元率。customer_rates: 顧客別レート(最優先)。category_rates: 商品分類別レート。tiers: ランク別(general/silver/gold)。expiry_months: 有効期限(月数)。rounding: 円未満処理。"
+}

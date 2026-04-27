@@ -1,0 +1,8 @@
+node_modules/
+.env
+data/points.db
+data/points.db-wal
+data/points.db-shm
+data/output/
+.DS_Store
+*.log

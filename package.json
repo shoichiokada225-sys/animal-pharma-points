@@ -1,0 +1,34 @@
+{
+  "name": "animal-pharma-points",
+  "version": "1.0.0",
+  "description": "動物医薬品卸 ポイントシステム (購入金額の0.1%還元)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "init": "node src/init.js",
+    "import:customers": "node src/import-customers.js",
+    "import:transactions": "node src/import-transactions.js",
+    "cancel": "node src/cancel.js",
+    "export:summary": "node src/export-summary.js",
+    "export:views": "node src/export-customer-views.js",
+    "redeem": "node src/redeem.js",
+    "expire": "node src/expire.js",
+    "update:tiers": "node src/update-tiers.js",
+    "monthly": "node src/monthly.js",
+    "dev": "node src/web/server.js",
+    "start": "node src/web/server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.9.0",
+    "dotenv": "^17.4.2",
+    "ejs": "^5.0.2",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "multer": "^2.1.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

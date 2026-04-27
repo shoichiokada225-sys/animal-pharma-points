@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> - ポイント管理</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <nav class="bg-white border-b border-gray-200 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <a href="/" class="text-lg font-bold text-blue-700">ポイント管理</a>
+        <a href="/" class="text-sm text-gray-600 hover:text-blue-600 <%= currentPath === '/' ? 'font-semibold text-blue-600' : '' %>">ダッシュボード</a>
+        <a href="/customers" class="text-sm text-gray-600 hover:text-blue-600 <%= currentPath === '/customers' ? 'font-semibold text-blue-600' : '' %>">顧客一覧</a>
+        <a href="/transactions" class="text-sm text-gray-600 hover:text-blue-600 <%= currentPath === '/transactions' ? 'font-semibold text-blue-600' : '' %>">取引管理</a>
+        <a href="/redeem" class="text-sm text-gray-600 hover:text-blue-600 <%= currentPath === '/redeem' ? 'font-semibold text-blue-600' : '' %>">ポイント利用</a>
+      </div>
+      <form method="POST" action="/logout">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="text-sm text-gray-500 hover:text-red-600">ログアウト</button>
+      </form>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <% if (typeof flash !== 'undefined' && flash && flash.success) { %>
+      <div class="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm whitespace-pre-line"><%= flash.success %></div>
+    <% } %>
+    <% if (typeof flash !== 'undefined' && flash && flash.error) { %>
+      <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm"><%= flash.error %></div>
+    <% } %>
+
+    <%- content %>
+  </main>
+</body>
+</html>

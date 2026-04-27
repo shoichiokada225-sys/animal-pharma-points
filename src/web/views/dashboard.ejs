@@ -1,0 +1,83 @@
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">ダッシュボード</h1>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <div class="text-sm text-gray-500 mb-1">登録顧客数</div>
+    <div class="text-3xl font-bold text-gray-800"><%= customerCount %><span class="text-base font-normal text-gray-500 ml-1">社</span></div>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <div class="text-sm text-gray-500 mb-1">発行済みポイント合計</div>
+    <div class="text-3xl font-bold text-blue-600"><%= totalPoints.toLocaleString() %><span class="text-base font-normal text-gray-500 ml-1">pt</span></div>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <div class="text-sm text-gray-500 mb-1">操作</div>
+    <div class="flex gap-2 mt-1">
+      <a href="/transactions" class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">取引取込</a>
+      <a href="/redeem" class="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">ポイント利用</a>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div>
+    <h2 class="text-lg font-semibold text-gray-800 mb-3">顧客残高一覧</h2>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-gray-100 bg-gray-50">
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500">顧客ID</th>
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500">顧客名</th>
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500">ランク</th>
+            <th class="px-4 py-2.5 text-right text-xs font-semibold text-gray-500">残高</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const b of balances) { %>
+          <% const tierLabel = { general: '一般', silver: 'シルバー', gold: 'ゴールド' }[b.tier] || '一般'; %>
+          <% const tierClass = b.tier === 'gold' ? 'text-yellow-600' : b.tier === 'silver' ? 'text-gray-500' : 'text-gray-400'; %>
+          <tr class="border-b border-gray-50 hover:bg-gray-50">
+            <td class="px-4 py-2.5 text-sm"><a href="/customers/<%= b.customer_id %>" class="text-blue-600 hover:underline"><%= b.customer_id %></a></td>
+            <td class="px-4 py-2.5 text-sm"><%= b.customer_name %></td>
+            <td class="px-4 py-2.5 text-sm <%= tierClass %> font-medium"><%= tierLabel %></td>
+            <td class="px-4 py-2.5 text-sm text-right font-semibold"><%= b.balance.toLocaleString() %> pt</td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <h2 class="text-lg font-semibold text-gray-800 mb-3">直近の活動</h2>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-gray-100 bg-gray-50">
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500">日時</th>
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500">顧客</th>
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500">種別</th>
+            <th class="px-4 py-2.5 text-right text-xs font-semibold text-gray-500">ポイント</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (recentActivity.length === 0) { %>
+          <tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-400">まだ活動がありません</td></tr>
+          <% } else { %>
+          <% for (const a of recentActivity) { %>
+          <% const typeLabel = { EARN: '付与', CANCEL: '取消', EXPIRE: '失効', REDEEM: '利用' }[a.type] || a.type; %>
+          <% const ptClass = a.points >= 0 ? 'text-green-600' : 'text-red-600'; %>
+          <tr class="border-b border-gray-50 hover:bg-gray-50">
+            <td class="px-4 py-2.5 text-xs text-gray-500"><%= (a.created_at || '').slice(0, 16).replace('T', ' ') %></td>
+            <td class="px-4 py-2.5 text-sm"><%= a.customer_name %></td>
+            <td class="px-4 py-2.5 text-sm"><%= typeLabel %></td>
+            <td class="px-4 py-2.5 text-sm text-right font-semibold <%= ptClass %>"><%= a.points >= 0 ? '+' : '' %><%= a.points.toLocaleString() %></td>
+          </tr>
+          <% } %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
