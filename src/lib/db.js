@@ -1,15 +1,59 @@
-import Database from 'better-sqlite3';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import pg from 'pg';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, '..', '..', 'data', 'points.db');
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('neon') ? { rejectUnauthorized: false } : false,
+});
 
-export function getDb() {
-  const db = new Database(DB_PATH);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
-  return db;
+/**
+ * PostgreSQL クエリ実行ヘルパー
+ * SQLite互換の薄いラッパー
+ */
+export async function query(sql, params = []) {
+  const result = await pool.query(sql, params);
+  return result.rows;
 }
 
-export { DB_PATH };
+/**
+ * 1行取得（なければ null）
+ */
+export async function queryOne(sql, params = []) {
+  const result = await pool.query(sql, params);
+  return result.rows[0] || null;
+}
+
+/**
+ * INSERT/UPDATE/DELETE の実行（rowCount を返す）
+ */
+export async function execute(sql, params = []) {
+  const result = await pool.query(sql, params);
+  return { rowCount: result.rowCount };
+}
+
+/**
+ * トランザクション実行
+ * @param {function} fn - async (client) => {...} クライアントを受け取る関数
+ */
+export async function withTransaction(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * プール終了
+ */
+export async function closePool() {
+  await pool.end();
+}
+
+export { pool };

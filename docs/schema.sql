@@ -1,27 +1,27 @@
 -- ====================================================================
 -- 動物医薬品卸 ポイントシステム スキーマ定義
--- SQLite3 用
+-- PostgreSQL (Neon) 用
 -- ====================================================================
 
 -- 顧客マスタ
 CREATE TABLE IF NOT EXISTS customers (
-  customer_id   TEXT PRIMARY KEY,            -- 例: C0001
+  customer_id   TEXT PRIMARY KEY,
   customer_name TEXT NOT NULL,
   email         TEXT,
-  view_token    TEXT NOT NULL UNIQUE,        -- 顧客閲覧URL用トークン(32文字以上)
-  tier          TEXT DEFAULT 'general',      -- ランク(general/silver/gold)
-  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+  view_token    TEXT NOT NULL UNIQUE,
+  tier          TEXT DEFAULT 'general',
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 取引(取込済の元データ)
 CREATE TABLE IF NOT EXISTS transactions (
-  transaction_id   TEXT PRIMARY KEY,         -- 販売管理側のID
+  transaction_id   TEXT PRIMARY KEY,
   customer_id      TEXT NOT NULL,
   transaction_date DATE NOT NULL,
-  amount           INTEGER NOT NULL,         -- 円(税抜)
-  category         TEXT,                     -- 商品分類(任意、レート解決に使用)
-  imported_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+  amount           INTEGER NOT NULL,
+  category         TEXT,
+  imported_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
 );
 
@@ -29,20 +29,15 @@ CREATE INDEX IF NOT EXISTS idx_tx_customer
   ON transactions(customer_id, transaction_date);
 
 -- ポイント元帳(全ての加減算履歴)
--- type:
---   'EARN'   購入による付与
---   'CANCEL' 返品・取消による減算
---   'EXPIRE' 有効期限切れ(将来用、MVPでは未使用)
---   'REDEEM' ポイント利用(将来用、MVPでは未使用)
 CREATE TABLE IF NOT EXISTS point_ledger (
-  ledger_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  ledger_id       SERIAL PRIMARY KEY,
   customer_id     TEXT NOT NULL,
-  transaction_id  TEXT,                      -- EARN/CANCELでは取引IDを紐付け
-  points          INTEGER NOT NULL,          -- 正負どちらも可
+  transaction_id  TEXT,
+  points          INTEGER NOT NULL,
   type            TEXT NOT NULL CHECK(type IN ('EARN','CANCEL','EXPIRE','REDEEM')),
   note            TEXT,
-  valid_until     DATE,                      -- ポイント有効期限(EARN時に設定、NULLは無期限)
-  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+  valid_until     DATE,
+  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
 );
 
@@ -57,7 +52,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_ledger_cancel
   ON point_ledger(transaction_id) WHERE type = 'CANCEL';
 
 -- 残高ビュー(顧客ごとの現在残高)
-CREATE VIEW IF NOT EXISTS v_balance AS
+CREATE OR REPLACE VIEW v_balance AS
 SELECT
   c.customer_id,
   c.customer_name,
@@ -66,4 +61,4 @@ SELECT
   COALESCE(SUM(l.points), 0) AS balance
 FROM customers c
 LEFT JOIN point_ledger l ON c.customer_id = l.customer_id
-GROUP BY c.customer_id, c.customer_name, c.view_token, c.tier;
+GROUP BY c.customer_id, c.customer_name, c.view_token, c.tier

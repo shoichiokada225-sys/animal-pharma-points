@@ -1,8 +1,10 @@
+import 'dotenv/config';
 import { importTransactions } from './import-transactions.js';
 import { expirePoints } from './expire.js';
 import { updateTiers } from './update-tiers.js';
 import { exportSummary } from './export-summary.js';
 import { exportCustomerViews } from './export-customer-views.js';
+import { closePool } from './lib/db.js';
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -23,10 +25,10 @@ async function main() {
   await importTransactions(file);
 
   console.log('\n[2/5] 有効期限切れポイント失効');
-  expirePoints();
+  await expirePoints();
 
   console.log('\n[3/5] ランク更新');
-  updateTiers();
+  await updateTiers();
 
   console.log('\n[4/5] 残高一覧Excel出力');
   await exportSummary();
@@ -34,6 +36,7 @@ async function main() {
   console.log('\n[5/5] 顧客向けHTML生成');
   await exportCustomerViews();
 
+  await closePool();
   console.log('\n=== 月次バッチ完了 ===');
 }
 

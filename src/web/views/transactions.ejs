@@ -61,7 +61,7 @@
         <td class="px-4 py-2.5 text-sm"><%= t.transaction_date %></td>
         <td class="px-4 py-2.5 text-sm text-right">&yen;<%= t.amount.toLocaleString() %></td>
         <td class="px-4 py-2.5 text-sm text-gray-500"><%= t.category || '-' %></td>
-        <td class="px-4 py-2.5 text-xs text-gray-400"><%= (t.imported_at || '').slice(0, 16).replace('T', ' ') %></td>
+        <td class="px-4 py-2.5 text-xs text-gray-400"><%= t.imported_at ? new Date(t.imported_at).toISOString().slice(0, 16).replace('T', ' ') : '' %></td>
       </tr>
       <% } %>
       <% } %>

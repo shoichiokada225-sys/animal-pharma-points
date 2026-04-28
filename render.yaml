@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: animal-pharma-points
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/web/server.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_PASSWORD_HASH
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production

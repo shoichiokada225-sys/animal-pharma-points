@@ -13,6 +13,7 @@ router.get('/', (req, res) => {
 router.post('/', async (req, res) => {
   const { password } = req.body;
   const hash = process.env.APP_PASSWORD_HASH;
+  console.log('LOGIN DEBUG: password=', JSON.stringify(password), 'hash=', hash?.substring(0, 15), 'hash_len=', hash?.length);
 
   if (!hash) {
     res.render('login', { title: 'ログイン', error: 'サーバー設定エラー: APP_PASSWORD_HASH が未設定です' });
@@ -23,7 +24,9 @@ router.post('/', async (req, res) => {
     const match = await bcrypt.compare(password || '', hash);
     if (match) {
       req.session.authenticated = true;
-      res.redirect('/');
+      req.session.save(() => {
+        res.redirect('/');
+      });
     } else {
       res.render('login', { title: 'ログイン', error: 'パスワードが正しくありません' });
     }

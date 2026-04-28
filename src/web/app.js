@@ -45,7 +45,26 @@ export function createApp() {
   });
 
   // ログインは認証不要
-  app.use('/login', loginRouter);
+  app.get('/login', (req, res) => {
+    if (req.session.authenticated) return res.redirect('/');
+    res.render('login', { title: 'ログイン', error: null });
+  });
+
+  app.post('/login', async (req, res) => {
+    const { password } = req.body;
+    const hash = process.env.APP_PASSWORD_HASH;
+    if (!hash) {
+      return res.render('login', { title: 'ログイン', error: 'APP_PASSWORD_HASH が未設定です' });
+    }
+    const { default: bcrypt } = await import('bcrypt');
+    const match = await bcrypt.compare(password || '', hash);
+    if (match) {
+      req.session.authenticated = true;
+      req.session.save(() => res.redirect('/'));
+    } else {
+      res.render('login', { title: 'ログイン', error: 'パスワードが正しくありません' });
+    }
+  });
 
   // 認証必須ルート
   app.use(requireAuth);

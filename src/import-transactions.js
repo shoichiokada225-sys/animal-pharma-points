@@ -1,7 +1,8 @@
+import 'dotenv/config';
 import ExcelJS from 'exceljs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getDb } from './lib/db.js';
+import { withTransaction, closePool } from './lib/db.js';
 import { calculatePoints, loadRules, resolveRate } from './lib/points.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -42,28 +43,16 @@ export async function importTransactions(fileName) {
   }
 
   const rules = loadRules();
+  const expiryMonths = rules.expiry_months ?? null;
   console.log(`📋 デフォルト還元率: ${(rules.default_rate * 100).toFixed(3)}% (${rules.default_rate})`);
   if (rules.customer_rates && Object.keys(rules.customer_rates).length > 0) {
     console.log(`📋 顧客別レート: ${Object.keys(rules.customer_rates).length} 件設定あり`);
   }
 
-  const db = getDb();
-  const checkTx = db.prepare('SELECT 1 FROM transactions WHERE transaction_id = ?');
-  const checkCustomer = db.prepare('SELECT customer_id, tier FROM customers WHERE customer_id = ?');
-  const insertTx = db.prepare(`
-    INSERT INTO transactions (transaction_id, customer_id, transaction_date, amount, category)
-    VALUES (?, ?, ?, ?, ?)
-  `);
-  const expiryMonths = rules.expiry_months ?? null;
-  const insertEarn = db.prepare(`
-    INSERT INTO point_ledger (customer_id, transaction_id, points, type, note, valid_until)
-    VALUES (?, ?, ?, 'EARN', ?, ?)
-  `);
-
   let processed = 0, skipped = 0, errors = 0;
   const errorRows = [];
 
-  const tx = db.transaction(() => {
+  await withTransaction(async (client) => {
     for (let i = 2; i <= sheet.rowCount; i++) {
       const row = sheet.getRow(i);
       const txId = row.getCell(headers.transaction_id).value?.toString().trim();
@@ -84,21 +73,20 @@ export async function importTransactions(fileName) {
           throw new Error('必須項目が不足');
         }
 
-        if (checkTx.get(txId)) {
-          skipped++;
-          continue;
-        }
+        const existingTx = (await client.query(
+          'SELECT 1 FROM transactions WHERE transaction_id = $1', [txId]
+        )).rows[0];
+        if (existingTx) { skipped++; continue; }
 
-        const customerRow = checkCustomer.get(cid);
-        if (!customerRow) {
-          throw new Error(`未登録の顧客ID: ${cid}`);
-        }
+        const customerRow = (await client.query(
+          'SELECT customer_id, tier FROM customers WHERE customer_id = $1', [cid]
+        )).rows[0];
+        if (!customerRow) throw new Error(`未登録の顧客ID: ${cid}`);
 
         const tier = customerRow.tier || null;
         const rate = resolveRate(rules, cid, category, tier);
         const points = calculatePoints(amount, rate);
 
-        // 有効期限の計算
         let validUntil = null;
         if (expiryMonths) {
           const d = new Date(date);
@@ -106,8 +94,14 @@ export async function importTransactions(fileName) {
           validUntil = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         }
 
-        insertTx.run(txId, cid, date, amount, category);
-        insertEarn.run(cid, txId, points, `購入額 ¥${amount.toLocaleString()} × ${rate}`, validUntil);
+        await client.query(
+          'INSERT INTO transactions (transaction_id, customer_id, transaction_date, amount, category) VALUES ($1, $2, $3, $4, $5)',
+          [txId, cid, date, amount, category]
+        );
+        await client.query(
+          'INSERT INTO point_ledger (customer_id, transaction_id, points, type, note, valid_until) VALUES ($1, $2, $3, $4, $5, $6)',
+          [cid, txId, points, 'EARN', `購入額 ¥${amount.toLocaleString()} × ${rate}`, validUntil]
+        );
         processed++;
       } catch (e) {
         errors++;
@@ -115,9 +109,6 @@ export async function importTransactions(fileName) {
       }
     }
   });
-  tx();
-
-  db.close();
 
   console.log(`✅ 処理完了: 付与 ${processed} 件 / 重複スキップ ${skipped} 件 / エラー ${errors} 件`);
   if (errorRows.length > 0) {
@@ -130,7 +121,7 @@ export async function importTransactions(fileName) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const file = parseArgs();
-  importTransactions(file).catch(err => {
+  importTransactions(file).then(() => closePool()).catch(err => {
     console.error('❌ エラー:', err.message);
     process.exit(1);
   });

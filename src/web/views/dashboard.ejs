@@ -69,7 +69,7 @@
           <% const typeLabel = { EARN: '付与', CANCEL: '取消', EXPIRE: '失効', REDEEM: '利用' }[a.type] || a.type; %>
           <% const ptClass = a.points >= 0 ? 'text-green-600' : 'text-red-600'; %>
           <tr class="border-b border-gray-50 hover:bg-gray-50">
-            <td class="px-4 py-2.5 text-xs text-gray-500"><%= (a.created_at || '').slice(0, 16).replace('T', ' ') %></td>
+            <td class="px-4 py-2.5 text-xs text-gray-500"><%= a.created_at ? new Date(a.created_at).toISOString().slice(0, 16).replace('T', ' ') : '' %></td>
             <td class="px-4 py-2.5 text-sm"><%= a.customer_name %></td>
             <td class="px-4 py-2.5 text-sm"><%= typeLabel %></td>
             <td class="px-4 py-2.5 text-sm text-right font-semibold <%= ptClass %>"><%= a.points >= 0 ? '+' : '' %><%= a.points.toLocaleString() %></td>
