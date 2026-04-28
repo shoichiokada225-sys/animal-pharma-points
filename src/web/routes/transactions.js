@@ -40,7 +40,7 @@ router.get('/', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/import', verifyCsrf, upload.single('file'), async (req, res) => {
+router.post('/import', upload.single('file'), verifyCsrf, async (req, res) => {
   if (!req.file) {
     req.session.flash = { error: 'ファイルが選択されていません' };
     return res.redirect('/transactions');
@@ -56,7 +56,7 @@ router.post('/import', verifyCsrf, upload.single('file'), async (req, res) => {
   res.redirect('/transactions');
 });
 
-router.post('/import-customers', verifyCsrf, upload.single('file'), async (req, res) => {
+router.post('/import-customers', upload.single('file'), verifyCsrf, async (req, res) => {
   if (!req.file) {
     req.session.flash = { error: 'ファイルが選択されていません' };
     return res.redirect('/transactions');
@@ -116,7 +116,7 @@ router.post('/import-customers', verifyCsrf, upload.single('file'), async (req, 
   res.redirect('/transactions');
 });
 
-router.post('/monthly', verifyCsrf, upload.single('file'), async (req, res) => {
+router.post('/monthly', upload.single('file'), verifyCsrf, async (req, res) => {
   if (!req.file) {
     req.session.flash = { error: 'ファイルが選択されていません' };
     return res.redirect('/transactions');
