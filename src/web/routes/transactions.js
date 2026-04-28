@@ -75,15 +75,20 @@ router.post('/import-customers', verifyCsrf, upload.single('file'), async (req, 
       if (v) headers[v] = col;
     });
 
+    const col = (ja, en) => headers[ja] || headers[en];
+    const cidCol = col('顧客ID', 'customer_id');
+    const nameCol = col('顧客名', 'customer_name');
+    const emailCol = col('メール', 'email');
+
     let added = 0, updated = 0;
 
     await withTransaction(async (client) => {
       for (let i = 2; i <= sheet.rowCount; i++) {
         const row = sheet.getRow(i);
-        const cid = row.getCell(headers.customer_id).value?.toString().trim();
+        const cid = row.getCell(cidCol).value?.toString().trim();
         if (!cid) continue;
-        const name = row.getCell(headers.customer_name).value?.toString().trim();
-        const emailCell = headers.email ? row.getCell(headers.email).value : null;
+        const name = row.getCell(nameCol).value?.toString().trim();
+        const emailCell = emailCol ? row.getCell(emailCol).value : null;
         const email = emailCell ? emailCell.toString().trim() : null;
 
         const existing = (await client.query(

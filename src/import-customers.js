@@ -19,10 +19,14 @@ export async function importCustomers() {
     if (v) headers[v] = col;
   });
 
-  for (const required of ['customer_id', 'customer_name']) {
-    if (!headers[required]) {
-      throw new Error(`必須列が見つかりません: ${required}`);
-    }
+  // 日本語・英語両対応のヘッダー解決
+  const col = (ja, en) => headers[ja] || headers[en];
+  const cidCol = col('顧客ID', 'customer_id');
+  const nameCol = col('顧客名', 'customer_name');
+  const emailCol = col('メール', 'email');
+
+  if (!cidCol || !nameCol) {
+    throw new Error('必須列が見つかりません: 顧客ID, 顧客名');
   }
 
   let added = 0, updated = 0;
@@ -30,11 +34,11 @@ export async function importCustomers() {
   await withTransaction(async (client) => {
     for (let i = 2; i <= sheet.rowCount; i++) {
       const row = sheet.getRow(i);
-      const cid = row.getCell(headers.customer_id).value?.toString().trim();
+      const cid = row.getCell(cidCol).value?.toString().trim();
       if (!cid) continue;
 
-      const name = row.getCell(headers.customer_name).value?.toString().trim();
-      const emailCell = headers.email ? row.getCell(headers.email).value : null;
+      const name = row.getCell(nameCol).value?.toString().trim();
+      const emailCell = emailCol ? row.getCell(emailCol).value : null;
       const email = emailCell ? emailCell.toString().trim() : null;
 
       const existing = (await client.query(

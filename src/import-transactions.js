@@ -38,8 +38,16 @@ export async function importTransactions(fileName) {
     if (v) headers[v] = col;
   });
 
-  for (const r of ['transaction_id', 'customer_id', 'transaction_date', 'amount']) {
-    if (!headers[r]) throw new Error(`必須列が見つかりません: ${r}`);
+  // 日本語・英語両対応のヘッダー解決
+  const col = (ja, en) => headers[ja] || headers[en];
+  const txIdCol = col('取引ID', 'transaction_id');
+  const cidCol = col('顧客ID', 'customer_id');
+  const dateCol = col('取引日', 'transaction_date');
+  const amountCol = col('金額', 'amount');
+  const categoryCol = col('分類', 'category');
+
+  if (!txIdCol || !cidCol || !dateCol || !amountCol) {
+    throw new Error('必須列が見つかりません: 取引ID, 顧客ID, 取引日, 金額');
   }
 
   const rules = loadRules();
@@ -55,18 +63,18 @@ export async function importTransactions(fileName) {
   await withTransaction(async (client) => {
     for (let i = 2; i <= sheet.rowCount; i++) {
       const row = sheet.getRow(i);
-      const txId = row.getCell(headers.transaction_id).value?.toString().trim();
+      const txId = row.getCell(txIdCol).value?.toString().trim();
       if (!txId) continue;
 
       try {
-        const cid = row.getCell(headers.customer_id).value?.toString().trim();
-        const date = toDateString(row.getCell(headers.transaction_date).value);
-        const rawAmount = row.getCell(headers.amount).value;
+        const cid = row.getCell(cidCol).value?.toString().trim();
+        const date = toDateString(row.getCell(dateCol).value);
+        const rawAmount = row.getCell(amountCol).value;
         const amount = typeof rawAmount === 'number'
           ? Math.floor(rawAmount)
           : parseInt(rawAmount?.toString().replace(/[^0-9-]/g, ''), 10);
-        const category = headers.category
-          ? row.getCell(headers.category).value?.toString().trim() || null
+        const category = categoryCol
+          ? row.getCell(categoryCol).value?.toString().trim() || null
           : null;
 
         if (!cid || !date || !Number.isFinite(amount)) {
