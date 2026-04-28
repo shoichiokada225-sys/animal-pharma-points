@@ -1,11 +1,17 @@
 # 動物医薬品卸 ポイントシステム
 
-購入金額の **0.1%** をポイント還元する社内向けバッチシステム。
-50社規模、SQLite単一ファイル運用、サーバー不要。
+購入金額の **0.1%** をポイント還元する社内向けポイント管理システム。
+50社規模、Neon PostgreSQL、Webダッシュボード付き。
+
+## ワンクリックデプロイ
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/shoichiokada225-sys/animal-pharma-points)
+
+デプロイ後、発行されたURLにアクセスしてパスワード `4101` でログインしてください。
 
 ---
 
-## セットアップ(初回のみ)
+## セットアップ(ローカル開発)
 
 ### 1. 前提
 

@@ -7,11 +7,11 @@ services:
     startCommand: node src/web/server.js
     envVars:
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://neondb_owner:npg_M0Av7akpmQCT@ep-crimson-art-anf0vvu0-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require
       - key: APP_PASSWORD_HASH
-        sync: false
+        value: $2b$10$2SSBj/qmF1.p93gF8pAf2.Qom0ay943uQ8RYy/6HP9yXoa7ZRU.pG
       - key: SESSION_SECRET
-        sync: false
+        value: animal-pharma-points-render-prod-2026
       - key: PORT
         value: 10000
       - key: NODE_ENV
