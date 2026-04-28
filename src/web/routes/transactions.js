@@ -4,14 +4,9 @@ import path from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
-import { verifyCsrf } from '../middleware/auth.js';
 import { query, withTransaction } from '../../lib/db.js';
 import { generateToken } from '../../lib/token.js';
 import { importTransactions } from '../../import-transactions.js';
-import { expirePoints } from '../../expire.js';
-import { updateTiers } from '../../update-tiers.js';
-import { exportSummary } from '../../export-summary.js';
-import { exportCustomerViews } from '../../export-customer-views.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INPUT_DIR = path.join(__dirname, '..', '..', '..', 'data', 'input');
@@ -40,7 +35,8 @@ router.get('/', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/import', upload.single('file'), verifyCsrf, async (req, res) => {
+// 取引Excel取込
+router.post('/import', upload.single('file'), async (req, res) => {
   if (!req.file) {
     req.session.flash = { error: 'ファイルが選択されていません' };
     return res.redirect('/transactions');
@@ -56,7 +52,8 @@ router.post('/import', upload.single('file'), verifyCsrf, async (req, res) => {
   res.redirect('/transactions');
 });
 
-router.post('/import-customers', upload.single('file'), verifyCsrf, async (req, res) => {
+// 顧客マスタ取込
+router.post('/import-customers', upload.single('file'), async (req, res) => {
   if (!req.file) {
     req.session.flash = { error: 'ファイルが選択されていません' };
     return res.redirect('/transactions');
@@ -112,30 +109,6 @@ router.post('/import-customers', upload.single('file'), verifyCsrf, async (req, 
     req.session.flash = { success: `顧客マスタ取込完了: 新規 ${added} 件 / 更新 ${updated} 件` };
   } catch (e) {
     req.session.flash = { error: `取込エラー: ${e.message}` };
-  }
-  res.redirect('/transactions');
-});
-
-router.post('/monthly', upload.single('file'), verifyCsrf, async (req, res) => {
-  if (!req.file) {
-    req.session.flash = { error: 'ファイルが選択されていません' };
-    return res.redirect('/transactions');
-  }
-  try {
-    const fileName = req.file.originalname;
-    writeFileSync(path.join(INPUT_DIR, fileName), req.file.buffer);
-
-    const logText = await captureLog(async () => {
-      await importTransactions(fileName);
-      await expirePoints();
-      await updateTiers();
-      await exportSummary();
-      await exportCustomerViews();
-    });
-
-    req.session.flash = { success: `月次バッチ完了\n${logText}` };
-  } catch (e) {
-    req.session.flash = { error: `月次バッチエラー: ${e.message}` };
   }
   res.redirect('/transactions');
 });
